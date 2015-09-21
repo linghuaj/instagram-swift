@@ -11,17 +11,41 @@ private let API = "https://api.instagram.com/v1/media/popular?client_id=76a883fb
 private let CELL_NAME="com.ljin.instagram.feedCell"
 
 class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
-
+    
     @IBOutlet weak var feedsView: UITableView!
     
     var feeds:NSArray = []
+    var refreshControl: UIRefreshControl!
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
         feedsView.dataSource = self
         feedsView.delegate = self
-        makeRequest()
+        
+        //        feedsView.separatorColor = UIColor.clearColor()
+        makeRequest(){}
+        initPullToRefresh()
     }
+    
+    /**
+    * add the refresh control as a subview of the scrollview.
+    * It's best to insert it at the lowest index so that it appears behind all the views in the scrollview.
+    */
+    func initPullToRefresh(){
+        refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: "onRefresh", forControlEvents: UIControlEvents.ValueChanged)
+        feedsView.insertSubview(refreshControl, atIndex: 0)
+    }
+    
+    
+    func onRefresh() {
+        //get current selected tag
+        makeRequest(){
+            self.refreshControl.endRefreshing()
+        };
+    }
+    
     
     func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
         
@@ -44,7 +68,10 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         return feeds.count
     }
     
-    func makeRequest(){
+    
+    //    func tableView
+    
+    func makeRequest(closure:()->()){
         
         var url = NSURL(string:API)!
         
@@ -57,11 +84,12 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             let dictionary = NSJSONSerialization.JSONObjectWithData(data!, options: nil, error: nil) as? NSDictionary
             
             dispatch_async(dispatch_get_main_queue()) {
-                
-                self.feeds = dictionary!["data"] as! NSArray
-                
-//                NSLog("self.feeds \(self.feeds)")
+                if let dictionary=dictionary{
+                    self.feeds = dictionary["data"] as! NSArray
+                    
+                }
                 self.feedsView.reloadData()
+                closure()
                 
             }
             
@@ -71,7 +99,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         
     }
     
-
-
+    
+    
 }
 
